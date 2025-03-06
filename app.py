@@ -87,7 +87,6 @@ def create_graph_chat(heading, purpose_text, figure, session_key, chat_context):
     chat_context: A short user prompt describing the chart/data for context
     """
 
-    # Horizontal rule + Subheader
     st.write("---")
     st.subheader(heading)
     st.markdown(purpose_text)
@@ -106,7 +105,6 @@ def create_graph_chat(heading, purpose_text, figure, session_key, chat_context):
             """
             <style>
             .chat-container {
-                /* remove fixed height so it adjusts to content: */
                 background-color: #f0f0f0;
                 overflow-y: auto;
                 padding: 10px;
@@ -142,41 +140,32 @@ def create_graph_chat(heading, purpose_text, figure, session_key, chat_context):
         # 1) Initialize chat if not exist
         if session_key not in st.session_state:
             st.session_state[session_key] = []
-            # Add a system message describing the chart
+            # Add a system/context message
             st.session_state[session_key].append({
                 "role": "system",
                 "content": "You are a helpful data analysis assistant. " + chat_context
             })
 
-        # 2) Render existing messages
-        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-        for msg in st.session_state[session_key]:
-            role = msg["role"]
-            content = msg["content"]
-            bubble_class = "assistant-bubble" if role=="assistant" else "user-bubble"
-            if role=="system":
-                bubble_class = "assistant-bubble"  # treat system as assistant
-            st.markdown(
-                f'<div class="chat-bubble {bubble_class}">{content}</div><div style="clear: both;"></div>',
-                unsafe_allow_html=True
-            )
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        # 3) Text input
+        # 2) Capture user input
         user_input = st.text_input("Your question:", key=f"{session_key}_input")
+
+        # 3) If user hits "Send", process the question -> openai
         if st.button("Send", key=f"{session_key}_btn"):
             if user_input.strip():
-                # Add user message
-                st.session_state[session_key].append({"role": "user", "content": user_input})
+                # Add the user's message to the conversation
+                st.session_state[session_key].append({
+                    "role": "user",
+                    "content": user_input
+                })
 
-                # If we have an API key, call ChatCompletion
                 if openai_api_key:
                     try:
-                        # Build messages for API
+                        # Prepare the conversation for the API
                         msgs_for_api = []
                         for m in st.session_state[session_key]:
                             msgs_for_api.append({"role": m["role"], "content": m["content"]})
 
+                        # Call the ChatCompletion endpoint
                         resp = openai.ChatCompletion.create(
                             model="gpt-3.5-turbo",
                             messages=msgs_for_api,
@@ -184,6 +173,8 @@ def create_graph_chat(heading, purpose_text, figure, session_key, chat_context):
                             temperature=0.7
                         )
                         answer = resp.choices[0].message.content.strip()
+
+                        # Save assistant's reply
                         st.session_state[session_key].append({
                             "role": "assistant",
                             "content": answer
@@ -191,13 +182,27 @@ def create_graph_chat(heading, purpose_text, figure, session_key, chat_context):
                     except Exception as e:
                         st.session_state[session_key].append({
                             "role": "assistant",
-                            "content": f"Error calling OpenAI: {e}"
+                            "content": f"Error calling OpenAI API: {e}"
                         })
                 else:
                     st.session_state[session_key].append({
                         "role": "assistant",
                         "content": "No OpenAI API key provided."
                     })
+
+        # 4) Now display the entire conversation in a container
+        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+        for msg in st.session_state[session_key]:
+            role = msg["role"]
+            content = msg["content"]
+            bubble_class = "assistant-bubble" if role == "assistant" else "user-bubble"
+            if role == "system":
+                bubble_class = "assistant-bubble"  # treat system context as assistant style
+            st.markdown(
+                f'<div class="chat-bubble {bubble_class}">{content}</div><div style="clear: both;"></div>',
+                unsafe_allow_html=True
+            )
+        st.markdown('</div>', unsafe_allow_html=True)
 
 ###############################################
 # 4. CREATE FIRST GRAPH (Pre/Post Composite)
@@ -254,7 +259,7 @@ if "Username" in onboarding_df.columns and "Username" in post_program_df.columns
     )
     if len(merged_teachers)>0:
         merged_teachers["Confidence_Change"] = merged_teachers["Confidence_Composite_Post"] - merged_teachers["Confidence_Composite_Pre"]
-        merged_teachers["Advocacy_Change"]   = merged_teachers["Advocacy_Composite_Post"]   - merged_teachers["Advocacy_Composite_Pre"]
+        merged_teachers["Advocacy_Change"]   = merged_teachers["Advocacy_Composite_Post"] - merged_teachers["Advocacy_Composite_Pre"]
 
         # Confidence diverging bar
         fig_conf, ax_conf = plt.subplots(figsize=(4,4))
@@ -274,9 +279,8 @@ if "Username" in onboarding_df.columns and "Username" in post_program_df.columns
         ax_adv.set_title("Advocacy Change", fontsize=10, fontweight='bold')
         ax_adv.set_xlabel("Change in Score")
 
-        # We'll combine them in one figure with subplots horizontally
+        # Combine them side by side
         fig_teacher, (ax1, ax2) = plt.subplots(1,2, figsize=(6,4), sharey=True)
-        # Copy over from fig_conf
         sorted_conf.plot(
             kind="barh",
             x="Username",
@@ -289,7 +293,6 @@ if "Username" in onboarding_df.columns and "Username" in post_program_df.columns
         ax1.set_title("Confidence Change", fontsize=10, fontweight="bold")
         ax1.set_xlabel("Change in Score")
 
-        # Copy over from fig_adv
         sorted_adv.plot(
             kind="barh",
             x="Username",
@@ -356,14 +359,14 @@ if change_dict:
     ax_pct.set_ylabel("Question")
     ax_pct.set_title("Percentage Improved / Same / Declined by Question", fontsize=10, fontweight="bold")
     for container in ax_pct.containers:
-        lbls=[f"{val*100:.0f}%" if val>0.02 else "" for val in container.datavalues]
+        lbls = [f"{val*100:.0f}%" if val>0.02 else "" for val in container.datavalues]
         ax_pct.bar_label(container, labels=lbls, label_type='center', color="white", fontsize=8)
 
     purpose_text_pct = """
     **Purpose**: Illustrate the proportion who improved / stayed same / declined for each question.  
     **Why It’s Helpful**: Drills down into which items had the most improvement.
     """
-    chat_context_pct = "This 100% stacked bar chart shows Improved, Same, or Declined for each question. "
+    chat_context_pct = "This 100% stacked bar chart shows Improved, Same, or Declined for each question."
 
     create_graph_chat(
         heading="Percentage of Teachers with Score Increases per Question",
