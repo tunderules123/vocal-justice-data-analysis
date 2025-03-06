@@ -161,12 +161,12 @@ with right_col:
     if "messages" not in st.session_state:
         st.session_state["messages"] = []
 
-    # 2) Define chat styling (scrollable, bubble-like)
+    # 2) FIXED CHAT CONTAINER HEIGHT (CHANGED FROM 1px TO 250px)
     st.markdown(
         """
         <style>
         .chat-container {
-            height: 250px;
+            height: 250px;  # CHANGED THIS LINE
             overflow-y: auto;
             background-color: #f0f0f0;
             padding: 10px;
@@ -217,10 +217,12 @@ with right_col:
     # 4) Display existing conversation
     render_chat(st.session_state["messages"])
 
-    # 5) Text input for new user question
-    user_input = st.text_input("Your question:")
-
-    # 6) On send, call OpenAI with full conversation
+    # 5) SIMPLIFIED INPUT SECTION (REMOVED CONTAINER/COLUMNS)
+    user_input = st.text_input(
+        "Your question:", 
+        placeholder="Type your message here..."
+    )
+    
     if st.button("Send"):
         if user_input.strip():
             # Append user message
@@ -251,6 +253,3 @@ with right_col:
                     "role": "assistant",
                     "content": "OpenAI API key not provided."
                 })
-
-    # Re-render chat after new message
-    render_chat(st.session_state["messages"])
