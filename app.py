@@ -13,28 +13,28 @@ st.set_page_config(page_title="Vocal Justice Analysis w/ AI", layout="wide")
 st.markdown(
     """
     <style>
-    /* Set Background & Text Colors */
+    /* Apply Vocal Justice Color Scheme */
     body {
-        background-color: #1E1E1E;
-        color: #E0E0E0;
+        background-color: #2A1E5C;  /* Deep Purple */
+        color: #F4A261;  /* Pastel Orange */
     }
     /* Style Sidebar */
     .stSidebar {
-        background-color: #222;
+        background-color: #3D2C8D;  /* Lighter Purple */
     }
     /* Style Headers */
     h1, h2, h3, h4 {
-        color: #FFFFFF;
+        color: #FFD166;  /* Bright Yellow */
     }
     /* Style DataFrames */
     .dataframe {
         border-radius: 8px;
-        background-color: #2A2A2A;
+        background-color: #413C58;
         color: white;
     }
     /* Style Buttons */
     .stButton>button {
-        background-color: #4A90E2 !important;
+        background-color: #9A8C98 !important;  /* Light Purple */
         color: white !important;
         border-radius: 8px;
         font-size: 16px;
@@ -42,39 +42,39 @@ st.markdown(
     /* Style Input Fields */
     .stTextInput>div>div>input {
         border-radius: 6px;
-        border: 1px solid #4A90E2;
+        border: 1px solid #F4A261;
         padding: 8px;
         font-size: 14px;
         color: white;
-        background-color: #2A2A2A;
+        background-color: #3D2C8D;
     }
-
-    /* Button Hover Effect */
+    /* Hover Effects */
     .stButton>button:hover {
-    background-color: #2EC4B6 !important;
-    }
-    
-    .stButton>button:hover {
-        background-color: #2EC4B6 !important;
+        background-color: #FFD166 !important;  /* Bright Yellow */
+        color: black !important;
+        transform: scale(1.05);
+        transition: 0.2s ease-in-out;
     }
     </style>
     """,
     unsafe_allow_html=True
 )
+
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Montserrat:wght@700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Poppins:wght@300;400;600&display=swap');
     h1, h2, h3, h4 {
         font-family: 'Montserrat', sans-serif;
     }
-    body, p, div {
-        font-family: 'Inter', sans-serif;
+    body, p, div, input, button {
+        font-family: 'Poppins', sans-serif;
     }
     </style>
     """,
     unsafe_allow_html=True
 )
+
 
 st.title("Vocal Justice Survey Analysis with AI Insights")
 
@@ -301,41 +301,42 @@ def create_graph_chat(heading, purpose_text, figure, session_key, chat_context):
 
     with right_col:
         # Minimal styling for bubble chat
-
         st.markdown(
             """
             <style>
-        .chat-container {
-            background-color: #1E1E1E;
-            padding: 10px;
-            border-radius: 8px;
-            max-height: 350px;
-            overflow-y: auto;
-        }
-        .chat-bubble {
-            padding: 8px 12px;
-            margin: 5px 0;
-            border-radius: 10px;
-            max-width: 80%;
-            font-size: 14px;
-        }
-        .user-bubble {
-            background-color: #4A90E2;
-            color: white;
-            float: right;
-            text-align: right;
-            margin-right: 10px;
-        }
-        .assistant-bubble {
-            background-color: #2A2A2A;
-            color: white;
-            float: left;
-            margin-left: 10px;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+            .chat-container {
+                background-color: #2A1E5C;
+                padding: 12px;
+                border-radius: 12px;
+                max-height: 350px;
+                overflow-y: auto;
+            }
+            .chat-bubble {
+                padding: 10px 15px;
+                margin: 8px 0;
+                border-radius: 12px;
+                max-width: 80%;
+                font-size: 15px;
+                box-shadow: 2px 2px 8px rgba(0,0,0,0.15);
+            }
+            .user-bubble {
+                background-color: #FFD166;
+                color: black;
+                float: right;
+                text-align: right;
+                margin-right: 12px;
+                font-weight: bold;
+            }
+            .assistant-bubble {
+                background-color: #9A8C98;
+                color: white;
+                float: left;
+                margin-left: 12px;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
 
 
         # 1) Initialize chat if not exist
