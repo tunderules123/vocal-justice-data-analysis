@@ -76,6 +76,31 @@ pre_adv_mean   = onboarding_df["Advocacy_Composite"].dropna().mean()
 post_adv_mean  = post_program_df["Advocacy_Composite"].dropna().mean()
 
 ###############################################
+# ADDITION: Function to summarize chart data
+###############################################
+def summarize_chart_data(description, data_points):
+    """
+    Returns a short textual summary of the data to help the AI
+    "visualize" what's in the chart. `description` is a short statement
+    about what the chart is. `data_points` is a list or dict of
+    relevant numeric data behind the chart.
+    """
+    if isinstance(data_points, dict):
+        # If data_points is a dict of label -> numeric
+        stats_text = ", ".join(f"{k}={v:.2f}" for k,v in data_points.items())
+    elif isinstance(data_points, list):
+        # If data_points is a list of numeric
+        stats_text = ", ".join(f"{v:.2f}" for v in data_points)
+    else:
+        stats_text = str(data_points)
+
+    summary = (
+        f"{description}\nData summary: {stats_text}."
+        " This is the numerical context to help you interpret the chart."
+    )
+    return summary
+
+###############################################
 # A HELPER: Creates the Chat for Each Graph
 ###############################################
 def create_graph_chat(heading, purpose_text, figure, session_key, chat_context):
@@ -144,7 +169,10 @@ def create_graph_chat(heading, purpose_text, figure, session_key, chat_context):
             # Add a system message describing the chart
             st.session_state[session_key].append({
                 "role": "system",
-                "content": "You are a helpful data analysis assistant. " + chat_context
+                "content": (
+                    "You are a helpful data analysis assistant. "
+                    + chat_context
+                )
             })
 
         # 2) Render existing messages
@@ -152,8 +180,8 @@ def create_graph_chat(heading, purpose_text, figure, session_key, chat_context):
         for msg in st.session_state[session_key]:
             role = msg["role"]
             content = msg["content"]
-            bubble_class = "assistant-bubble" if role=="assistant" else "user-bubble"
-            if role=="system":
+            bubble_class = "assistant-bubble" if role == "assistant" else "user-bubble"
+            if role == "system":
                 bubble_class = "assistant-bubble"  # treat system as assistant
             st.markdown(
                 f'<div class="chat-bubble {bubble_class}">{content}</div><div style="clear: both;"></div>',
@@ -169,8 +197,8 @@ def create_graph_chat(heading, purpose_text, figure, session_key, chat_context):
         if submitted and user_input.strip():
             # Add user message
             st.session_state[session_key].append({"role": "user", "content": user_input})
-    
-            # If we have an API key, call ChatCompletion
+
+            # If we have an API key, call ChatCompletion (REVERTED TO YOUR ORIGINAL SYNTAX)
             if openai_api_key:
                 try:
                     # Build messages for API
@@ -178,18 +206,18 @@ def create_graph_chat(heading, purpose_text, figure, session_key, chat_context):
                         {"role": m["role"], "content": m["content"]}
                         for m in st.session_state[session_key]
                     ]
-                    
-                    # NEW: Initialize client with API key
+
+                    # REVERTED to your original approach:
                     client = openai.OpenAI(api_key=openai_api_key)
-                    
-                    # Updated API call
+
+                    # STILL the same call you had before:
                     resp = client.chat.completions.create(
                         model="gpt-3.5-turbo",
                         messages=msgs_for_api,
                         max_tokens=300,
                         temperature=0.7
                     )
-                    
+
                     answer = resp.choices[0].message.content.strip()
                     st.session_state[session_key].append({
                         "role": "assistant",
@@ -201,10 +229,10 @@ def create_graph_chat(heading, purpose_text, figure, session_key, chat_context):
                         "content": f"Error calling OpenAI: {e}"
                     })
             else:
-                        st.session_state[session_key].append({
-                            "role": "assistant",
-                            "content": "No OpenAI API key provided."
-                        })
+                st.session_state[session_key].append({
+                    "role": "assistant",
+                    "content": "No OpenAI API key provided."
+                })
 
 ###############################################
 # 4. CREATE FIRST GRAPH (Pre/Post Composite)
@@ -232,27 +260,35 @@ for bar in adv_bars:
     h = bar.get_height()
     axz[1].text(bar.get_x()+bar.get_width()/2, h+0.03, f"{h:.2f}", ha="center", va="bottom", fontsize=8)
 
+fig_prepost.tight_layout()
+
 purpose_text_prepost = """
 **Purpose**: Show the aggregate changes in Confidence and Advocacy composite scores before vs. after the program.  
 **Why It’s Helpful**: Offers a quick, high-level overview of whether the group as a whole is trending up or down.
 """
-chat_context_prepost = (
-    f"This bar chart compares Confidence & Advocacy from pre to post. "
-    f"Confidence: pre={pre_conf_mean:.2f}, post={post_conf_mean:.2f}; "
-    f"Advocacy: pre={pre_adv_mean:.2f}, post={post_adv_mean:.2f}."
+
+# Create a short numerical summary to pass to the AI:
+prepost_summary = summarize_chart_data(
+    "This chart shows two bar groups: one for Confidence (pre vs. post), another for Advocacy (pre vs. post).",
+    {
+        "Confidence_Pre": pre_conf_mean,
+        "Confidence_Post": post_conf_mean,
+        "Advocacy_Pre": pre_adv_mean,
+        "Advocacy_Post": post_adv_mean
+    }
 )
+
 create_graph_chat(
     heading="Pre/Post Composite Score Bar Chart",
     purpose_text=purpose_text_prepost,
     figure=fig_prepost,
     session_key="chat_prepost",
-    chat_context=chat_context_prepost
+    chat_context=prepost_summary
 )
 
 ###############################################
 # 5. SECOND GRAPH: Individual Teacher Change
 ###############################################
-# Merge by "Username"
 if "Username" in onboarding_df.columns and "Username" in post_program_df.columns:
     merged_teachers = pd.merge(
         onboarding_df[["Username","Confidence_Composite","Advocacy_Composite"]],
@@ -260,8 +296,14 @@ if "Username" in onboarding_df.columns and "Username" in post_program_df.columns
         on="Username", how="inner", suffixes=("_Pre","_Post")
     )
     if len(merged_teachers)>0:
-        merged_teachers["Confidence_Change"] = merged_teachers["Confidence_Composite_Post"] - merged_teachers["Confidence_Composite_Pre"]
-        merged_teachers["Advocacy_Change"]   = merged_teachers["Advocacy_Composite_Post"]   - merged_teachers["Advocacy_Composite_Pre"]
+        merged_teachers["Confidence_Change"] = (
+            merged_teachers["Confidence_Composite_Post"]
+            - merged_teachers["Confidence_Composite_Pre"]
+        )
+        merged_teachers["Advocacy_Change"] = (
+            merged_teachers["Advocacy_Composite_Post"]
+            - merged_teachers["Advocacy_Composite_Pre"]
+        )
 
         # Confidence diverging bar
         fig_conf, ax_conf = plt.subplots(figsize=(4,4))
@@ -283,7 +325,6 @@ if "Username" in onboarding_df.columns and "Username" in post_program_df.columns
 
         # We'll combine them in one figure with subplots horizontally
         fig_teacher, (ax1, ax2) = plt.subplots(1,2, figsize=(6,4), sharey=True)
-        # Copy over from fig_conf
         sorted_conf.plot(
             kind="barh",
             x="Username",
@@ -296,7 +337,6 @@ if "Username" in onboarding_df.columns and "Username" in post_program_df.columns
         ax1.set_title("Confidence Change", fontsize=10, fontweight="bold")
         ax1.set_xlabel("Change in Score")
 
-        # Copy over from fig_adv
         sorted_adv.plot(
             kind="barh",
             x="Username",
@@ -316,14 +356,27 @@ if "Username" in onboarding_df.columns and "Username" in post_program_df.columns
         **Why It’s Helpful**: Emphasizes variation—some teachers might have risen substantially, others dropped. 
         Color-coding (up vs. down) highlights overall patterns quickly.
         """
-        chat_context_teacher = "Diverging bars show each teacher's Confidence_Change & Advocacy_Change from pre to post."
+        # Summarize data for AI:
+        avg_conf_change = merged_teachers["Confidence_Change"].mean()
+        avg_adv_change  = merged_teachers["Advocacy_Change"].mean()
+        teacher_change_summary = summarize_chart_data(
+            "Diverging bar charts show each teacher's difference in Confidence_Composite and Advocacy_Composite from pre to post.",
+            {
+                "Avg_Confidence_Change": avg_conf_change,
+                "Min_Confidence_Change": merged_teachers["Confidence_Change"].min(),
+                "Max_Confidence_Change": merged_teachers["Confidence_Change"].max(),
+                "Avg_Advocacy_Change": avg_adv_change,
+                "Min_Advocacy_Change": merged_teachers["Advocacy_Change"].min(),
+                "Max_Advocacy_Change": merged_teachers["Advocacy_Change"].max(),
+            }
+        )
 
         create_graph_chat(
             heading="Individual Teacher Change in Composite Scores",
             purpose_text=purpose_text_teacher,
             figure=fig_teacher,
             session_key="chat_teacherchange",
-            chat_context=chat_context_teacher
+            chat_context=teacher_change_summary
         )
 
 ###############################################
@@ -370,14 +423,20 @@ if change_dict:
     **Purpose**: Illustrate the proportion who improved / stayed same / declined for each question.  
     **Why It’s Helpful**: Drills down into which items had the most improvement.
     """
-    chat_context_pct = "This 100% stacked bar chart shows Improved, Same, or Declined for each question. "
+    # Summarize data for AI:
+    top_questions = list(change_dict.keys())[:3]  # just an example of partial data
+    sample_dict = {k: change_dict[k] for k in top_questions}
+    pct_summary = summarize_chart_data(
+        "100% stacked bar chart for each question, showing proportions of teachers who improved, stayed same, or declined.",
+        sample_dict
+    )
 
     create_graph_chat(
         heading="Percentage of Teachers with Score Increases per Question",
         purpose_text=purpose_text_pct,
         figure=fig_pct,
         session_key="chat_pctteachers",
-        chat_context=chat_context_pct
+        chat_context=pct_summary
     )
 
 ###############################################
@@ -403,14 +462,25 @@ if "Gender" in onboarding_df.columns:
     **Purpose**: Compare average Likert responses by gender.  
     **Why It’s Helpful**: Shows potential differences or similarities across demographics.
     """
-    chat_context_gender = "Grouped bar chart of mean Likert by Gender, focusing on confidence/advocacy items."
+
+    # Summarize data for AI:
+    gender_summary = {}
+    for g in gender_mean_df["Gender"]:
+        row = gender_mean_df[gender_mean_df["Gender"] == g][likert_cols].squeeze()
+        overall_avg = row.mean()
+        gender_summary[g] = overall_avg
+
+    gender_chart_summary = summarize_chart_data(
+        "Grouped bar chart of mean Likert by Gender, focusing on confidence/advocacy items in the Onboarding survey.",
+        gender_summary
+    )
 
     create_graph_chat(
         heading="Mean Likert Responses by Gender",
         purpose_text=purpose_text_gender,
         figure=fig_gender,
         session_key="chat_gender",
-        chat_context=chat_context_gender
+        chat_context=gender_chart_summary
     )
 
 ###############################################
