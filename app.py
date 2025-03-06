@@ -76,20 +76,16 @@ pre_adv_mean   = onboarding_df["Advocacy_Composite"].dropna().mean()
 post_adv_mean  = post_program_df["Advocacy_Composite"].dropna().mean()
 
 ###############################################
-# ADDITION: Function to summarize chart data
+# A HELPER: Summarize chart data
 ###############################################
 def summarize_chart_data(description, data_points):
     """
     Returns a short textual summary of the data to help the AI
-    "visualize" what's in the chart. `description` is a short statement
-    about what the chart is. `data_points` is a list or dict of
-    relevant numeric data behind the chart.
+    "visualize" what's in the chart.
     """
     if isinstance(data_points, dict):
-        # If data_points is a dict of label -> numeric
         stats_text = ", ".join(f"{k}={v:.2f}" for k,v in data_points.items())
     elif isinstance(data_points, list):
-        # If data_points is a list of numeric
         stats_text = ", ".join(f"{v:.2f}" for v in data_points)
     else:
         stats_text = str(data_points)
@@ -99,6 +95,58 @@ def summarize_chart_data(description, data_points):
         " This is the numerical context to help you interpret the chart."
     )
     return summary
+
+###############################################
+# NEW (GLOBAL CONTEXT) - Create metadata for the AI
+###############################################
+def build_global_context():
+    """
+    Returns a string that includes relevant details about:
+    - Which columns are in the dataframes
+    - The composite definitions
+    - Possibly the first few rows
+    """
+    # Columns in onboarding_df and post_program_df
+    onboard_cols = list(onboarding_df.columns)
+    post_cols    = list(post_program_df.columns)
+
+    # Composite definitions
+    confidence_questions = "\n".join([" - " + q for q in confidence_cols])
+    advocacy_questions   = "\n".join([" - " + q for q in advocacy_cols])
+
+    # Example of just the first 3 rows from each DF, if you want:
+    # (Truncating or summarizing large data is safer for token limits)
+    onboard_head = onboarding_df.head(3).to_dict(orient="records")
+    post_head    = post_program_df.head(3).to_dict(orient="records")
+
+    context_text = f"""
+Below is some global context about the dataset and how composites are formed:
+
+1) Onboarding DF Columns:
+{onboard_cols}
+
+2) Post-Program DF Columns:
+{post_cols}
+
+3) Confidence_Composite is the mean of these columns:
+{confidence_questions}
+
+4) Advocacy_Composite is the mean of these columns:
+{advocacy_questions}
+
+5) Sample of onboarding_df (first 3 rows in JSON format):
+{onboard_head}
+
+6) Sample of post_program_df (first 3 rows in JSON format):
+{post_head}
+
+Please incorporate these details whenever the user asks about column definitions,
+composites, or the data structure.
+"""
+    return context_text
+
+# Store global context in a single variable
+GLOBAL_DATA_CONTEXT = build_global_context()
 
 ###############################################
 # A HELPER: Creates the Chat for Each Graph
@@ -166,12 +214,15 @@ def create_graph_chat(heading, purpose_text, figure, session_key, chat_context):
         # 1) Initialize chat if not exist
         if session_key not in st.session_state:
             st.session_state[session_key] = []
-            # Add a system message describing the chart
+            # Add a system message with GLOBAL + chart context
             st.session_state[session_key].append({
                 "role": "system",
                 "content": (
-                    "You are a helpful data analysis assistant. "
-                    + chat_context
+                    "You are a helpful data analysis assistant.\n\n"
+                    "GLOBAL CONTEXT:\n"
+                    f"{GLOBAL_DATA_CONTEXT}\n\n"
+                    "CHART-SPECIFIC CONTEXT:\n"
+                    f"{chat_context}"
                 )
             })
 
@@ -198,7 +249,7 @@ def create_graph_chat(heading, purpose_text, figure, session_key, chat_context):
             # Add user message
             st.session_state[session_key].append({"role": "user", "content": user_input})
 
-            # If we have an API key, call ChatCompletion (REVERTED TO YOUR ORIGINAL SYNTAX)
+            # If we have an API key, call ChatCompletion
             if openai_api_key:
                 try:
                     # Build messages for API
@@ -207,10 +258,9 @@ def create_graph_chat(heading, purpose_text, figure, session_key, chat_context):
                         for m in st.session_state[session_key]
                     ]
 
-                    # REVERTED to your original approach:
+                    # Revert to your original approach:
                     client = openai.OpenAI(api_key=openai_api_key)
 
-                    # STILL the same call you had before:
                     resp = client.chat.completions.create(
                         model="gpt-3.5-turbo",
                         messages=msgs_for_api,
@@ -267,7 +317,6 @@ purpose_text_prepost = """
 **Why It’s Helpful**: Offers a quick, high-level overview of whether the group as a whole is trending up or down.
 """
 
-# Create a short numerical summary to pass to the AI:
 prepost_summary = summarize_chart_data(
     "This chart shows two bar groups: one for Confidence (pre vs. post), another for Advocacy (pre vs. post).",
     {
@@ -295,7 +344,7 @@ if "Username" in onboarding_df.columns and "Username" in post_program_df.columns
         post_program_df[["Username","Confidence_Composite","Advocacy_Composite"]],
         on="Username", how="inner", suffixes=("_Pre","_Post")
     )
-    if len(merged_teachers)>0:
+    if len(merged_teachers) > 0:
         merged_teachers["Confidence_Change"] = (
             merged_teachers["Confidence_Composite_Post"]
             - merged_teachers["Confidence_Composite_Pre"]
@@ -323,7 +372,7 @@ if "Username" in onboarding_df.columns and "Username" in post_program_df.columns
         ax_adv.set_title("Advocacy Change", fontsize=10, fontweight='bold')
         ax_adv.set_xlabel("Change in Score")
 
-        # We'll combine them in one figure with subplots horizontally
+        # Combine into one figure
         fig_teacher, (ax1, ax2) = plt.subplots(1,2, figsize=(6,4), sharey=True)
         sorted_conf.plot(
             kind="barh",
@@ -360,7 +409,7 @@ if "Username" in onboarding_df.columns and "Username" in post_program_df.columns
         avg_conf_change = merged_teachers["Confidence_Change"].mean()
         avg_adv_change  = merged_teachers["Advocacy_Change"].mean()
         teacher_change_summary = summarize_chart_data(
-            "Diverging bar charts show each teacher's difference in Confidence_Composite and Advocacy_Composite from pre to post.",
+            "Diverging bar charts show each teacher's difference in Confidence_Composite and Advocacy_Composite.",
             {
                 "Avg_Confidence_Change": avg_conf_change,
                 "Min_Confidence_Change": merged_teachers["Confidence_Change"].min(),
@@ -423,8 +472,7 @@ if change_dict:
     **Purpose**: Illustrate the proportion who improved / stayed same / declined for each question.  
     **Why It’s Helpful**: Drills down into which items had the most improvement.
     """
-    # Summarize data for AI:
-    top_questions = list(change_dict.keys())[:3]  # just an example of partial data
+    top_questions = list(change_dict.keys())[:3]
     sample_dict = {k: change_dict[k] for k in top_questions}
     pct_summary = summarize_chart_data(
         "100% stacked bar chart for each question, showing proportions of teachers who improved, stayed same, or declined.",
@@ -443,7 +491,6 @@ if change_dict:
 # 7. FOURTH GRAPH: Mean Likert by Gender
 ###############################################
 if "Gender" in onboarding_df.columns:
-    # We'll just plot from the onboarding data
     likert_cols = confidence_cols + advocacy_cols
     gender_mean_df = onboarding_df.groupby("Gender")[likert_cols].mean().reset_index()
     df_melted= gender_mean_df.melt(id_vars="Gender", var_name="Question", value_name="Mean Score")
@@ -462,8 +509,6 @@ if "Gender" in onboarding_df.columns:
     **Purpose**: Compare average Likert responses by gender.  
     **Why It’s Helpful**: Shows potential differences or similarities across demographics.
     """
-
-    # Summarize data for AI:
     gender_summary = {}
     for g in gender_mean_df["Gender"]:
         row = gender_mean_df[gender_mean_df["Gender"] == g][likert_cols].squeeze()
