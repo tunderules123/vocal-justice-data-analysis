@@ -19,8 +19,8 @@ st.markdown(
         color: #E0E0E0;
     }
     /* Style Sidebar */
-    .stSidebar {
-        background-color: #222;
+        section[data-testid="stSidebar"] {
+        background-color: #D3D3FF !important;  /* Lavender */
     }
     /* Style Headers */
     h1, h2, h3, h4 {
@@ -42,11 +42,11 @@ st.markdown(
     /* Style Input Fields */
     .stTextInput>div>div>input {
         border-radius: 6px;
-        border: 1px solid #4A90E2;
+        border: 2px solid #4A90E2;
         padding: 8px;
         font-size: 14px;
-        color: white;
-        background-color: #2A2A2A;
+        color: black;
+        background-color: white;
     }
 
     /* Button Hover Effect */
@@ -320,23 +320,19 @@ def create_graph_chat(heading, purpose_text, figure, session_key, chat_context):
             font-size: 14px;
         }
         .user-bubble {
-            background-color: #4A90E2;
-            color: white;
-            float: right;
-            text-align: right;
-            margin-right: 10px;
+            background-color: #FAC898 !important; /* Pastel Orange */
+            color: white !important;
+            font-weight: bold;
         }
         .assistant-bubble {
-            background-color: #2A2A2A;
-            color: white;
-            float: left;
-            margin-left: 10px;
+            background-color: #D3D3FF !important; /* Pastel Purple */
+            color: white !important;
+            font-weight: bold;
         }
         </style>
         """,
         unsafe_allow_html=True
     )
-
 
         # 1) Initialize chat if not exist
         if session_key not in st.session_state:
