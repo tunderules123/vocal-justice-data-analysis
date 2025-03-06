@@ -84,9 +84,16 @@ def summarize_chart_data(description, data_points):
     so the AI can interpret the chart's figures.
     """
     if isinstance(data_points, dict):
-        stats_text = ", ".join(f"{k}={v:.2f}" for k,v in data_points.items())
+        items = []
+        for k, v in data_points.items():
+            # Format floats and integers to 2 decimal places, otherwise cast as string
+            if isinstance(v, (int, float)):
+                items.append(f"{k}={v:.2f}")
+            else:
+                items.append(f"{k}={str(v)}")  # Keep string values unchanged
+        stats_text = ", ".join(items)
     elif isinstance(data_points, list):
-        stats_text = ", ".join(f"{v:.2f}" for v in data_points)
+        stats_text = ", ".join(f"{v:.2f}" if isinstance(v, (int, float)) else str(v) for v in data_points)
     else:
         stats_text = str(data_points)
 
@@ -95,6 +102,7 @@ def summarize_chart_data(description, data_points):
         " This numeric context helps interpret the chart."
     )
     return summary
+
 
 ###############################################
 # FULL CONTEXT TEXTS (Long Versions)
