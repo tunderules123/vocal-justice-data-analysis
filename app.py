@@ -14,10 +14,10 @@ st.title("Vocal Justice Survey Analysis with AI Insights")
 
 # Provide or request OpenAI API key
 openai_api_key = st.sidebar.text_input("OpenAI API Key", type="password")
-if openai_api_key:
-    openai.api_key = openai_api_key
-else:
+if not openai_api_key:
     st.sidebar.info("Please enter your OpenAI API key to enable AI features.")
+else:
+    st.sidebar.success("OpenAI API key loaded!")  # Optional confirmation
 
 ###############################################
 # 1. FILE UPLOADS
@@ -166,39 +166,45 @@ def create_graph_chat(heading, purpose_text, figure, session_key, chat_context):
             user_input = st.text_input("Your question:", key=f"{session_key}_input")
             submitted = st.form_submit_button("Send")
 
-            if submitted and user_input.strip():
-                # Add user message
-                st.session_state[session_key].append({"role": "user", "content": user_input})
-
-                # If we have an API key, call ChatCompletion
-                if openai_api_key:
-                    try:
-                        # Build messages for API
-                        msgs_for_api = [
-                            {"role": m["role"], "content": m["content"]}
-                            for m in st.session_state[session_key]
-                        ]
-                        resp = openai.ChatCompletion.create(
-                            model="gpt-3.5-turbo",
-                            messages=msgs_for_api,
-                            max_tokens=300,
-                            temperature=0.7
-                        )
-                        answer = resp.choices[0].message.content.strip()
-                        st.session_state[session_key].append({
-                            "role": "assistant",
-                            "content": answer
-                        })
-                    except Exception as e:
-                        st.session_state[session_key].append({
-                            "role": "assistant",
-                            "content": f"Error calling OpenAI: {e}"
-                        })
-                else:
+        if submitted and user_input.strip():
+            # Add user message
+            st.session_state[session_key].append({"role": "user", "content": user_input})
+    
+            # If we have an API key, call ChatCompletion
+            if openai_api_key:
+                try:
+                    # Build messages for API
+                    msgs_for_api = [
+                        {"role": m["role"], "content": m["content"]}
+                        for m in st.session_state[session_key]
+                    ]
+                    
+                    # NEW: Initialize client with API key
+                    client = openai.OpenAI(api_key=openai_api_key)
+                    
+                    # Updated API call
+                    resp = client.chat.completions.create(
+                        model="gpt-3.5-turbo",
+                        messages=msgs_for_api,
+                        max_tokens=300,
+                        temperature=0.7
+                    )
+                    
+                    answer = resp.choices[0].message.content.strip()
                     st.session_state[session_key].append({
                         "role": "assistant",
-                        "content": "No OpenAI API key provided."
+                        "content": answer
                     })
+                except Exception as e:
+                    st.session_state[session_key].append({
+                        "role": "assistant",
+                        "content": f"Error calling OpenAI: {e}"
+                    })
+            else:
+                        st.session_state[session_key].append({
+                            "role": "assistant",
+                            "content": "No OpenAI API key provided."
+                        })
 
 ###############################################
 # 4. CREATE FIRST GRAPH (Pre/Post Composite)
