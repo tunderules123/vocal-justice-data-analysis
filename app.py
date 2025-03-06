@@ -547,23 +547,68 @@ if change_dict:
 ###############################################
 # 7. FOURTH GRAPH: Mean Likert by Gender
 ###############################################
-if "Gender" in onboarding_df.columns:
-    likert_cols = confidence_cols + advocacy_cols
-    gender_mean_df = onboarding_df.groupby("Gender")[likert_cols].mean().reset_index()
+# -----------------------------------------------
+# 🚀 EXTRACT A "Gender" COLUMN FROM PRONOUNS
+# -----------------------------------------------
+def categorize_gender(pronouns):
+    """Categorizes gender based on pronoun text."""
+    if pd.isna(pronouns):
+        return "Unknown"
+    
+    pronouns = pronouns.lower()
+    
+    if "she" in pronouns:
+        return "Female"
+    elif "he" in pronouns:
+        return "Male"
+    elif "they" in pronouns or "them" in pronouns:
+        return "Non-Binary"
+    return "Other/Unknown"
+
+# Extract pronoun text from parentheses in "Full Name & Pronouns"
+if "Full Name & Pronouns" in onboarding_df.columns:
+    onboarding_df["Gender"] = onboarding_df["Full Name & Pronouns"].str.extract(r'\((.*?)\)')
+    onboarding_df["Gender"] = onboarding_df["Gender"].apply(categorize_gender)
+else:
+    onboarding_df["Gender"] = "Unknown"  # Default if column not found
+
+# -----------------------------------------------
+# 🚀 COMPUTE MEAN LIKERT SCORES BY GENDER
+# -----------------------------------------------
+likert_cols = confidence_cols + advocacy_cols
+
+# Ensure Likert scores are numeric
+onboarding_df[likert_cols] = onboarding_df[likert_cols].apply(pd.to_numeric, errors="coerce")
+
+# Group by Gender and compute mean scores
+gender_mean_df = onboarding_df.groupby("Gender")[likert_cols].mean().reset_index()
+
+if not gender_mean_df.empty:
+    # Melt dataframe for seaborn
     df_melted = gender_mean_df.melt(id_vars="Gender", var_name="Question", value_name="Mean Score")
 
-    fig_gender, ax_g = plt.subplots(figsize=(5,4))
+    # Create the grouped bar plot
+    fig_gender, ax_g = plt.subplots(figsize=(6,4))
     sns.barplot(data=df_melted, x="Question", y="Mean Score", hue="Gender",
                 palette="Set2", edgecolor="black", ax=ax_g)
-    ax_g.set_xticklabels([x if len(x)<30 else x[:28]+".." for x in df_melted["Question"].unique()],
-                         rotation=30, ha="right")
+    
+    # Format labels
+    ax_g.set_xticklabels(
+        [q if len(q) < 30 else q[:28] + "..." for q in df_melted["Question"].unique()],
+        rotation=30, ha="right"
+    )
     ax_g.set_ylim(0,5)
-    ax_g.set_title("Mean Likert by Gender (Onboarding)", fontsize=10, fontweight="bold")
+    ax_g.set_title("Mean Likert Responses by Gender", fontsize=10, fontweight="bold")
+    
+    # Add value labels on bars
     for container in ax_g.containers:
         ax_g.bar_label(container, fmt="%.2f", label_type="edge", padding=3, fontsize=8)
 
+    # -----------------------------------------------
+    # 🚀 CHATBOT CONTEXT FOR AI
+    # -----------------------------------------------
     purpose_text_gender = """
-    **Purpose**: Compare average Likert responses by gender.  
+    **Purpose**: Compare average Likert responses by gender.
     **Why It’s Helpful**: Shows potential differences or similarities across demographics.
     """
 
@@ -583,6 +628,7 @@ if "Gender" in onboarding_df.columns:
         session_key="chat_gender",
         chat_context=chart_context_gender
     )
+
 
 ###############################################
 # 8. DONE
