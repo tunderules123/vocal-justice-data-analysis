@@ -267,30 +267,34 @@ def create_graph_chat(heading, purpose_text, figure, session_key, chat_context):
             unsafe_allow_html=True
         )
 
+        # 1) Initialize chat if not exist
         if session_key not in st.session_state:
             st.session_state[session_key] = []
-            # Put the entire chart_context into a system message
+
+            # ✅ Store the AI context **without displaying it**:
             st.session_state[session_key].append({
                 "role": "system",
-                "content": (
-                    "You are a helpful data analysis assistant. "
-                    + chat_context
-                )
+                "content": chat_context  # AI gets the context but it's not visible
             })
 
+        # 2) Render only user and assistant messages
         st.markdown('<div class="chat-container">', unsafe_allow_html=True)
         for msg in st.session_state[session_key]:
             role = msg["role"]
             content = msg["content"]
-            bubble_class = "assistant-bubble" if role == "assistant" else "user-bubble"
+            
+            # 🚀 **Hide system messages from user view**
             if role == "system":
-                bubble_class = "assistant-bubble"
+                continue  # Skips displaying system messages
+
+            bubble_class = "assistant-bubble" if role == "assistant" else "user-bubble"
             st.markdown(
                 f'<div class="chat-bubble {bubble_class}">{content}</div><div style="clear: both;"></div>',
                 unsafe_allow_html=True
             )
         st.markdown('</div>', unsafe_allow_html=True)
 
+        # 3) Use a form for user input and button submission
         with st.form(key=f"{session_key}_form"):
             user_input = st.text_input("Your question:", key=f"{session_key}_input")
             submitted = st.form_submit_button("Send")
@@ -298,19 +302,27 @@ def create_graph_chat(heading, purpose_text, figure, session_key, chat_context):
         if submitted and user_input.strip():
             # Add user message
             st.session_state[session_key].append({"role": "user", "content": user_input})
+
+            # If we have an API key, call OpenAI
             if openai_api_key:
                 try:
+                    # Build messages for API (excluding system messages)
                     msgs_for_api = [
                         {"role": m["role"], "content": m["content"]}
                         for m in st.session_state[session_key]
+                        if m["role"] != "system"  # ✅ AI still has context but user never sees it
                     ]
+
+                    # OpenAI API Call
                     client = openai.OpenAI(api_key=openai_api_key)
                     resp = client.chat.completions.create(
                         model="gpt-3.5-turbo",
-                        messages=msgs_for_api,
+                        messages=[{"role": "system", "content": chat_context}] + msgs_for_api,
                         max_tokens=300,
                         temperature=0.7
                     )
+
+                    # Extract response and display
                     answer = resp.choices[0].message.content.strip()
                     st.session_state[session_key].append({
                         "role": "assistant",
