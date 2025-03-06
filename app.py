@@ -76,7 +76,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.title("Vocal Justice Survey Analysis with AI Insights")
+st.title("Vocal Justice Survey AI Analysis Tool")
 
 # Provide or request OpenAI API key
 openai_api_key = st.sidebar.text_input("OpenAI API Key", type="password")
