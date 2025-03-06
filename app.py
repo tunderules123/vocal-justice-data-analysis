@@ -10,6 +10,72 @@ import openai
 # 0. PAGE CONFIG & OPENAI KEY
 ###############################################
 st.set_page_config(page_title="Vocal Justice Analysis w/ AI", layout="wide")
+st.markdown(
+    """
+    <style>
+    /* Set Background & Text Colors */
+    body {
+        background-color: #1E1E1E;
+        color: #E0E0E0;
+    }
+    /* Style Sidebar */
+    .stSidebar {
+        background-color: #222;
+    }
+    /* Style Headers */
+    h1, h2, h3, h4 {
+        color: #FFFFFF;
+    }
+    /* Style DataFrames */
+    .dataframe {
+        border-radius: 8px;
+        background-color: #2A2A2A;
+        color: white;
+    }
+    /* Style Buttons */
+    .stButton>button {
+        background-color: #4A90E2 !important;
+        color: white !important;
+        border-radius: 8px;
+        font-size: 16px;
+    }
+    /* Style Input Fields */
+    .stTextInput>div>div>input {
+        border-radius: 6px;
+        border: 1px solid #4A90E2;
+        padding: 8px;
+        font-size: 14px;
+        color: white;
+        background-color: #2A2A2A;
+    }
+
+    /* Button Hover Effect */
+    .stButton>button:hover {
+    background-color: #2EC4B6 !important;
+    }
+    
+    .stButton>button:hover {
+        background-color: #2EC4B6 !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+st.markdown(
+    """
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Montserrat:wght@700&display=swap');
+    h1, h2, h3, h4 {
+        font-family: 'Montserrat', sans-serif;
+    }
+    body, p, div {
+        font-family: 'Inter', sans-serif;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 st.title("Vocal Justice Survey Analysis with AI Insights")
 
 # Provide or request OpenAI API key
@@ -38,10 +104,14 @@ st.write("## Data Preview")
 col_a, col_b = st.columns(2)
 with col_a:
     st.write("**Pre-Survey (Onboarding) - First 5 Rows**")
+    st.markdown('<div class="dataframe">', unsafe_allow_html=True)
     st.dataframe(onboarding_df.head())
+    st.markdown('</div>', unsafe_allow_html=True)
 with col_b:
     st.write("**Post-Survey (Post) - First 5 Rows**")
+    st.markdown('<div class="dataframe">', unsafe_allow_html=True)
     st.dataframe(post_program_df.head())
+    st.markdown('</div>', unsafe_allow_html=True)
 
 ###############################################
 # 2. DEFINE COMPOSITE COLUMNS
@@ -231,41 +301,42 @@ def create_graph_chat(heading, purpose_text, figure, session_key, chat_context):
 
     with right_col:
         # Minimal styling for bubble chat
+
         st.markdown(
             """
             <style>
-            .chat-container {
-                background-color: #f0f0f0;
-                overflow-y: auto;
-                padding: 10px;
-                border-radius: 5px;
-                margin-bottom: 10px;
-                max-height: 300px;
-            }
-            .chat-bubble {
-                display: inline-block;
-                padding: 8px 12px;
-                margin: 6px 0;
-                border-radius: 10px;
-                max-width: 80%;
-                clear: both;
-            }
-            .user-bubble {
-                background-color: #007BFF;
-                color: #fff;
-                float: right;
-                margin-right: 10px;
-            }
-            .assistant-bubble {
-                background-color: #e2e2e2;
-                color: #000;
-                float: left;
-                margin-left: 10px;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
+        .chat-container {
+            background-color: #1E1E1E;
+            padding: 10px;
+            border-radius: 8px;
+            max-height: 350px;
+            overflow-y: auto;
+        }
+        .chat-bubble {
+            padding: 8px 12px;
+            margin: 5px 0;
+            border-radius: 10px;
+            max-width: 80%;
+            font-size: 14px;
+        }
+        .user-bubble {
+            background-color: #4A90E2;
+            color: white;
+            float: right;
+            text-align: right;
+            margin-right: 10px;
+        }
+        .assistant-bubble {
+            background-color: #2A2A2A;
+            color: white;
+            float: left;
+            margin-left: 10px;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
 
         # 1) Initialize chat if not exist
         if session_key not in st.session_state:
