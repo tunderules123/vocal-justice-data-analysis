@@ -3,5 +3,5 @@ pandas
 numpy
 matplotlib
 seaborn
-openai
+openai==0.28.0
 scipy
