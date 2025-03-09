@@ -104,7 +104,7 @@ post_program_df = pd.read_csv(post_file)
 
 # Simulate processing delay
 with st.spinner("Loading data..."):
-    time.sleep(3)
+    time.sleep(1)
 
 st.write("## Data Preview")
 col_a, col_b = st.columns(2)
@@ -460,7 +460,7 @@ chart_context_prepost = prepost_context_text + "\n\n" + prepost_numeric_summary
 
 # Simulate loading time before rendering the graph
 with st.spinner("Generating Pre/Post Composite Score Chart..."):
-    time.sleep(3)
+    time.sleep(1)
 
 create_graph_chat(
     heading="Pre/Post Composite Score Bar Chart",
@@ -553,7 +553,7 @@ if "Username" in onboarding_df.columns and "Username" in post_program_df.columns
         chart_context_teacherchange = teacherchange_context_text + "\n\n" + teacher_change_numeric_summary
 
         with st.spinner("Generating Individual Teacher Change Chart..."):
-            time.sleep(3)
+            time.sleep(1)
 
         create_graph_chat(
             heading="Individual Teacher Change in Composite Scores",
@@ -621,7 +621,7 @@ if change_dict:
     chart_context_pctteachers = pctchange_context_text + "\n\n" + pct_numeric_summary
     
     with st.spinner("Generating Percentage of Teachers Improved Chart..."):
-        time.sleep(3)
+        time.sleep(1)
 
     create_graph_chat(
         heading="Percentage of Teachers with Score Increases per Question",
@@ -709,7 +709,7 @@ if not gender_mean_df.empty:
     chart_context_gender = gender_context_text + "\n\n" + gender_numeric_summary
 
     with st.spinner("Generating Mean Likert Responses by Gender Chart..."):
-        time.sleep(3)
+        time.sleep(1)
 
     create_graph_chat(
         heading="Mean Likert Responses by Gender",
