@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import scipy.stats as stats
 import openai
+import time
+
 
 ###############################################
 # 0. PAGE CONFIG & OPENAI KEY
@@ -99,6 +101,10 @@ if not pre_file or not post_file:
 # Read the CSVs
 onboarding_df = pd.read_csv(pre_file)
 post_program_df = pd.read_csv(post_file)
+
+# Simulate processing delay
+with st.spinner("Loading data..."):
+    time.sleep(3)
 
 st.write("## Data Preview")
 col_a, col_b = st.columns(2)
@@ -452,6 +458,10 @@ prepost_numeric_summary = summarize_chart_data(
 )
 chart_context_prepost = prepost_context_text + "\n\n" + prepost_numeric_summary
 
+# Simulate loading time before rendering the graph
+with st.spinner("Generating Pre/Post Composite Score Chart..."):
+    time.sleep(3)
+
 create_graph_chat(
     heading="Pre/Post Composite Score Bar Chart",
     purpose_text=purpose_text_prepost,
@@ -542,6 +552,9 @@ if "Username" in onboarding_df.columns and "Username" in post_program_df.columns
         )
         chart_context_teacherchange = teacherchange_context_text + "\n\n" + teacher_change_numeric_summary
 
+        with st.spinner("Generating Individual Teacher Change Chart..."):
+            time.sleep(3)
+
         create_graph_chat(
             heading="Individual Teacher Change in Composite Scores",
             purpose_text=purpose_text_teacher,
@@ -606,6 +619,9 @@ if change_dict:
 
     pct_numeric_summary = summarize_chart_data("", sample_dict)
     chart_context_pctteachers = pctchange_context_text + "\n\n" + pct_numeric_summary
+    
+    with st.spinner("Generating Percentage of Teachers Improved Chart..."):
+        time.sleep(3)
 
     create_graph_chat(
         heading="Percentage of Teachers with Score Increases per Question",
@@ -691,6 +707,9 @@ if not gender_mean_df.empty:
 
     gender_numeric_summary = summarize_chart_data("", gender_summary)
     chart_context_gender = gender_context_text + "\n\n" + gender_numeric_summary
+
+    with st.spinner("Generating Mean Likert Responses by Gender Chart..."):
+        time.sleep(3)
 
     create_graph_chat(
         heading="Mean Likert Responses by Gender",
