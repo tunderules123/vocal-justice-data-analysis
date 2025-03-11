@@ -581,7 +581,15 @@ if not gender_mean_df.empty:
     chart_context_gender = gender_context_text + "\n\n" + gender_numeric_summary
 
     with st.spinner("Generating Mean Likert Responses by Gender Chart..."):
-       
+        time.sleep(1)
+
+    create_graph_chat(
+        heading="Mean Likert Responses by Gender",
+        purpose_text=purpose_text_gender,
+        figure=fig_gender,
+        session_key="chat_gender",
+        chat_context=chart_context_gender
+    )
 
 ###############################################
 # 8. FIFTH GRAPH: Student Post Survey (SAME LOGIC AS COLAB)
