@@ -83,9 +83,12 @@ st.markdown(
     """
     <style>
     /* Override st.warning box color & text */
-    div[data-testid="stNotification"] {
-        background-color: #9053A4 !important; /* light purple */
-        color: white !important;             /* white text */
+    .stAlert {
+        background-color: #9053A4 !important; /* Light purple */
+        color: white !important;             /* White text */
+    }
+    .stAlert p {
+        color: white !important; /* Ensure any paragraph text inside is also white */
     }
     </style>
     """,
