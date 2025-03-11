@@ -106,16 +106,17 @@ else:
 ###############################################
 # 1. FILE UPLOADS
 ###############################################
-st.sidebar.header("Upload All 3 CSVs")
+st.sidebar.header("Upload Your Data")
 pre_file = st.sidebar.file_uploader("Pre-Survey CSV (Onboarding)", type=["csv"])
 post_file = st.sidebar.file_uploader("Post-Survey CSV (Post-Program)", type=["csv"])
 students_post_file = st.sidebar.file_uploader("Students Post Survey Results CSV", type=["csv"])
 
+# Require ALL 3 files at once
 if not pre_file or not post_file or not students_post_file:
-    st.warning("Please upload all three CSV files (Pre, Post, and Students Post Survey).")
+    st.warning("Please upload all three CSV files: Pre, Post, and Students Post Survey Results.")
     st.stop()
 
-# Read the CSVs
+# Read them all
 onboarding_df = pd.read_csv(pre_file)
 post_program_df = pd.read_csv(post_file)
 students_post_df = pd.read_csv(students_post_file)
@@ -124,23 +125,20 @@ students_post_df = pd.read_csv(students_post_file)
 with st.spinner("Loading data..."):
     time.sleep(1)
 
-# Display first 5 rows of each
 st.write("## Data Preview")
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.write("**Pre-Survey (Onboarding)** - First 5 Rows")
+    st.write("**Pre-Survey (Onboarding) - First 5 Rows**")
     st.markdown('<div class="dataframe">', unsafe_allow_html=True)
     st.dataframe(onboarding_df.head())
     st.markdown('</div>', unsafe_allow_html=True)
-
 with col2:
-    st.write("**Post-Survey (Post)** - First 5 Rows")
+    st.write("**Post-Survey (Post) - First 5 Rows**")
     st.markdown('<div class="dataframe">', unsafe_allow_html=True)
     st.dataframe(post_program_df.head())
     st.markdown('</div>', unsafe_allow_html=True)
-
 with col3:
-    st.write("**Students Post Survey** - First 5 Rows")
+    st.write("**Students Post Survey - First 5 Rows**")
     st.markdown('<div class="dataframe">', unsafe_allow_html=True)
     st.dataframe(students_post_df.head())
     st.markdown('</div>', unsafe_allow_html=True)
@@ -158,11 +156,12 @@ advocacy_cols = [
     "I push my school leadership to integrate social justice education into our core curriculum."
 ]
 
-# Convert columns to numeric for pre/post
+# Convert columns to numeric
 for col in confidence_cols + advocacy_cols:
     onboarding_df[col] = pd.to_numeric(onboarding_df[col], errors='coerce')
     post_program_df[col] = pd.to_numeric(post_program_df[col], errors='coerce')
 
+# Create composite scores
 onboarding_df["Confidence_Composite"] = onboarding_df[confidence_cols].mean(axis=1, skipna=True)
 onboarding_df["Advocacy_Composite"]   = onboarding_df[advocacy_cols].mean(axis=1, skipna=True)
 post_program_df["Confidence_Composite"] = post_program_df[confidence_cols].mean(axis=1, skipna=True)
@@ -200,15 +199,15 @@ def summarize_chart_data(description, data_points):
     return summary
 
 ###############################################
-# FULL CONTEXT TEXTS (Shortened for brevity)
+# FULL CONTEXT TEXTS (Long Versions)
 ###############################################
-prepost_context_text = "PRE/POST COMPOSITE SCORE BAR CHART..."
-teacherchange_context_text = "INDIVIDUAL TEACHER CHANGE IN COMPOSITE SCORES..."
-pctchange_context_text = "PERCENTAGE OF TEACHERS WITH SCORE INCREASES PER QUESTION..."
-gender_context_text = "MEAN LIKERT RESPONSES BY GENDER..."
+prepost_context_text = """PRE/POST COMPOSITE SCORE BAR CHART ..."""
+teacherchange_context_text = """INDIVIDUAL TEACHER CHANGE IN COMPOSITE SCORES ..."""
+pctchange_context_text = """PERCENTAGE OF TEACHERS WITH SCORE INCREASES PER QUESTION ..."""
+gender_context_text = """MEAN LIKERT RESPONSES BY GENDER ..."""
 
 ###############################################
-# CREATE_GRAPH_CHAT (unchanged from your code)
+# CREATE_GRAPH_CHAT (unchanged)
 ###############################################
 def create_graph_chat(heading, purpose_text, figure, session_key, chat_context):
     st.write("---")
@@ -279,6 +278,7 @@ def create_graph_chat(heading, purpose_text, figure, session_key, chat_context):
 
         if submitted and user_input.strip():
             st.session_state[session_key].append({"role": "user", "content": user_input})
+
             if openai_api_key:
                 try:
                     msgs_for_api = [
@@ -361,7 +361,6 @@ create_graph_chat(
     session_key="chat_prepost",
     chat_context=chart_context_prepost
 )
-
 
 ###############################################
 # 5. SECOND GRAPH: Individual Teacher Change
@@ -593,96 +592,56 @@ if not gender_mean_df.empty:
     )
 
 ###############################################
-# 8. FIFTH GRAPH: Student Post Survey (SAME LOGIC AS COLAB)
+# 8. FIFTH GRAPH: Student Post Survey (Gender Analysis)
 ###############################################
-# EXACT CODE FROM YOUR COLAB, adapted to 'students_post_df'
-st.write("---")
-st.subheader("Student Post Survey: Gender Analysis")
+# We'll create a new graph from the "students_post_df"
+if "Gender Identity" in students_post_df.columns:
+    # Adjust these columns to match your actual code
+    bucket_cols = ["Main", "Social Awareness Score", "Social Change Score"]
 
-# 1) Define your buckets dictionary (as in your screenshot)
-buckets = {
-    "Main": [
-        "Q1: Did you participate in Vocal Justice this year?",
-        "Q2: Some question here",
-        # etc... (Adjust these to match your actual columns)
-    ],
-    "Social Awareness Score": [
-        "Q4: Another question",
-        "Q5: Another question",
-        # ...
-    ],
-    "Social Change Score": [
-        "Q6: Another question",
-        "Q7: Another question",
-        # ...
-    ]
-}
+    # Check if all required columns exist
+    missing_cols = [c for c in bucket_cols if c not in students_post_df.columns]
+    if missing_cols:
+        st.error(f"Missing columns in Students Post Survey Results: {missing_cols}")
+    else:
+        # Group by Gender Identity
+        gender_means = students_post_df.groupby("Gender Identity")[bucket_cols].mean()
 
-# 2) A function that calculates each row's bucket averages
-def get_bucket_scores(row):
-    scores = {}
-    for bucket_name, question_list in buckets.items():
-        # average across the columns in question_list
-        # If any column doesn't exist, this might raise KeyError
-        # so make sure the columns match your CSV exactly
-        val = row[question_list].mean()
-        scores[bucket_name] = val
-    return pd.Series(scores)
+        fig_student, ax_student = plt.subplots(figsize=(6,4))
+        x = np.arange(len(gender_means.index))
+        width = 0.2
 
-# 3) Create a new df_v with the buckets + keep "Gender Identity"
-try:
-df_v = students_post_df.apply(get_bucket_scores, axis=1)
-except KeyError as e:
-    st.error(f"Column mismatch: {e}")
-    st.stop()
+        for i, col in enumerate(bucket_cols):
+            ax_student.bar(x + i*width, gender_means[col], width, label=col)
 
-if "Gender Identity" not in students_post_df.columns:
-    st.warning("No 'Gender Identity' column found in Students Post Survey. Cannot produce this graph.")
+        ax_student.set_xticks(x + width*(len(bucket_cols)-1)/2)
+        ax_student.set_xticklabels(gender_means.index, rotation=30, ha="right")
+        ax_student.set_ylabel("Average Score")
+        ax_student.set_title("Gender Analysis: Average Bucket Scores")
+        ax_student.legend()
+
+        purpose_text_students = """
+        **Purpose**: Analyze average bucket scores by gender identity from the Student Post Survey.
+        **Why It’s Helpful**: Reveals differences or similarities across various 'buckets' (e.g. Social Awareness, etc.) 
+        based on gender identity.
+        """
+        chart_context_students = (
+            "This chart shows the average scores for each bucket grouped by 'Gender Identity' "
+            "from the Students Post Survey Results. "
+        )
+
+        with st.spinner("Generating Student Post Survey Gender Analysis..."):
+            time.sleep(1)
+
+        create_graph_chat(
+            heading="Student Post Survey: Gender Analysis",
+            purpose_text=purpose_text_students,
+            figure=fig_student,
+            session_key="chat_studentsurvey",
+            chat_context=chart_context_students
+        )
 else:
-    df_v["Gender Identity"] = students_post_df["Gender Identity"]
-
-    # 4) Group by Gender Identity for the 3 buckets
-    try:
-        gender_avg_scores = df_v.groupby("Gender Identity")[["Main","Social Awareness Score","Social Change Score"]].mean()
-    except KeyError as e:
-        st.error(f"Column mismatch in df_v: {e}")
-        st.stop()
-
-    # 5) Plot the grouped bar chart
-    fig_student, ax_student = plt.subplots(figsize=(6,4))
-    x = np.arange(len(gender_avg_scores.index))
-    width = 0.2
-    bucket_list = ["Main","Social Awareness Score","Social Change Score"]
-
-    for i, col in enumerate(bucket_list):
-        ax_student.bar(x + i*width, gender_avg_scores[col], width, label=col)
-
-    ax_student.set_xticks(x + width*(len(bucket_list)-1)/2)
-    ax_student.set_xticklabels(gender_avg_scores.index, rotation=30, ha="right")
-    ax_student.set_ylabel("Average Score")
-    ax_student.set_title("Gender Analysis: Average Bucket Scores")
-    ax_student.legend()
-
-    # Provide the question box on the right
-    student_purpose_text = """
-    **Purpose**: Analyze average bucket scores by gender identity from the Students Post Survey.
-    **Why It’s Helpful**: Replicates your Colab logic exactly, showing how each 'bucket' differs by gender.
-    """
-    chart_context_students = (
-        "This chart replicates the exact logic from your Colab code, computing average bucket scores "
-        "for 'Main', 'Social Awareness Score', and 'Social Change Score' grouped by 'Gender Identity'."
-    )
-
-    with st.spinner("Generating Student Post Survey Gender Analysis..."):
-        time.sleep(1)
-
-    create_graph_chat(
-        heading="Student Post Survey: Gender Analysis",
-        purpose_text=student_purpose_text,
-        figure=fig_student,
-        session_key="chat_studentsurvey",
-        chat_context=chart_context_students
-    )
+    st.warning("No 'Gender Identity' column found in the Students Post Survey Results CSV.")
 
 ###############################################
 # 9. DONE
