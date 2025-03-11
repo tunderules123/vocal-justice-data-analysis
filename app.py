@@ -78,6 +78,20 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# Change color of the box
+st.markdown(
+    """
+    <style>
+    /* Override st.warning box color & text */
+    div[data-testid="stNotification"] {
+        background-color: #9053A4 !important; /* light purple */
+        color: white !important;             /* white text */
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 st.title("Vocal Justice Survey AI Analysis Tool")
 
 # Provide or request OpenAI API key
