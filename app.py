@@ -630,7 +630,7 @@ def get_bucket_scores(row):
 
 # 3) Create a new df_v with the buckets + keep "Gender Identity"
 try:
-df_v = students_post_df.apply(get_bucket_scores, axis=1)
+    df_v = students_post_df.apply(get_bucket_scores, axis=1)
 except KeyError as e:
     st.error(f"Column mismatch: {e}")
     st.stop()
