@@ -200,12 +200,107 @@ def summarize_chart_data(description, data_points):
     return summary
 
 ###############################################
-# FULL CONTEXT TEXTS (Shortened for brevity)
+# FULL CONTEXT TEXTS (Long Versions)
 ###############################################
-prepost_context_text = "PRE/POST COMPOSITE SCORE BAR CHART..."
-teacherchange_context_text = "INDIVIDUAL TEACHER CHANGE IN COMPOSITE SCORES..."
-pctchange_context_text = "PERCENTAGE OF TEACHERS WITH SCORE INCREASES PER QUESTION..."
-gender_context_text = "MEAN LIKERT RESPONSES BY GENDER..."
+
+prepost_context_text = """\
+PRE/POST COMPOSITE SCORE BAR CHART
+
+**Relevant Data Columns & Setup**:
+- Each survey participant has composite scores in two areas:
+  1) Confidence_Composite: Derived as the mean of three columns:
+     - "I know how to help my students communicate persuasively about social justice issues."
+     - "I know how to help my students feel confident."
+     - "I know how to help my students build their critical consciousness."
+  2) Advocacy_Composite: Derived as the mean of two columns:
+     - "I frequently talk with my students about social justice issues."
+     - "I push my school leadership to integrate social justice education into our core curriculum."
+- The CSV files (“pre” and “post”) each contain these questions plus a “Username” column and possibly other demographic fields.
+
+**Code Approach**:
+- We read both CSVs into dataframes (onboarding_df for “Pre” and post_program_df for “Post”).
+- We calculate Confidence_Composite and Advocacy_Composite for each user by averaging the relevant columns.
+- We then compute the mean of these composites across all users pre vs. post.
+- Using matplotlib/seaborn, we create a **two-panel bar chart**:
+  - Left panel compares mean Confidence_Composite (Pre vs. Post).
+  - Right panel compares mean Advocacy_Composite (Pre vs. Post).
+
+**Results Summary**:
+- The chart typically shows that both Confidence_Composite and Advocacy_Composite **increased** from pre to post.
+- For example, you might see Confidence go from ~3.32 (Pre) to ~3.59 (Post) and Advocacy from ~3.39 to ~3.76.
+- This suggests that, on average, teachers feel slightly more confident and more engaged in advocacy after the program.
+- Each bar has a label on top indicating the mean score (ranging from 0 to 5).
+"""
+
+teacherchange_context_text = """\
+INDIVIDUAL TEACHER CHANGE IN COMPOSITE SCORES
+
+**Relevant Data Columns & Setup**:
+- The CSV includes a "Username" column to identify each teacher.
+- For each teacher, we have “Confidence_Composite_Pre,” “Confidence_Composite_Post,” “Advocacy_Composite_Pre,” “Advocacy_Composite_Post.”
+- We then create "Confidence_Change" = (Post - Pre) and "Advocacy_Change" = (Post - Pre).
+
+**Code Approach**:
+- After merging the pre and post dataframes on "Username," we compute the difference in each teacher’s Confidence_Composite and Advocacy_Composite.
+- The code then uses two horizontal bar plots (matplotlib) side-by-side, often called a “diverging bar chart,” where bars extending to the right (green) indicate an increase, and bars extending to the left (red) indicate a decrease.
+
+**Results Summary**:
+- Each teacher’s username is on the y-axis, and the x-axis shows how much their score changed (e.g., +0.5 means they increased by half a point).
+- Typically, you’ll see most teachers in the green region, indicating positive growth, and a smaller number in the red region, indicating a drop.
+- Some teachers might have a large jump in Advocacy compared to Confidence (or vice versa), highlighting individual differences.
+- Overall, this graph visually demonstrates that most participants improved from pre to post, but a few either stayed the same or declined slightly in certain areas.
+"""
+
+pctchange_context_text = """\
+PERCENTAGE OF TEACHERS WITH SCORE INCREASES PER QUESTION
+
+**Relevant Data Columns & Setup**:
+- We look at each of the **five** Likert-scale questions individually:
+  1) "I frequently talk with my students about social justice issues."
+  2) "I know how to help my students communicate persuasively about social justice issues."
+  3) "I know how to help my students feel confident."
+  4) "I know how to help my students build their critical consciousness."
+  5) "I push my school leadership to integrate social justice education into our core curriculum."
+- For each user, we compare Pre vs. Post responses to each question.
+
+**Code Approach**:
+- The script merges the pre and post files on "Username."
+- For each question, it calculates how many teachers improved (post > pre), stayed the same (post == pre), or declined (post < pre).
+- It then creates a **100% stacked bar chart** in matplotlib/seaborn:
+  - The horizontal axis is the proportion of teachers (0-100%).
+  - Each question is on the y-axis.
+  - Within each bar, green = improved, gray = same, red = declined.
+
+**Results Summary**:
+- Each question’s bar is subdivided into the percentage who improved, stayed the same, or declined.
+- For instance, you might see 62% improved on one question, 38% stayed the same, and 0% declined. Another question might have more declines.
+- This helps show exactly which skill areas or beliefs changed the most across the group.
+- Often, we see **most** teachers improved in at least one question area, but the magnitude and direction vary across questions.
+"""
+
+gender_context_text = """\
+MEAN LIKERT RESPONSES BY GENDER
+
+**Relevant Data Columns & Setup**:
+- The “Gender” column in the CSV indicates each teacher’s reported gender (e.g., Female, Male, Unknown).
+- We again reference the **same five** Likert questions used in the Confidence/Advocacy composites:
+  - "I frequently talk with my students about social justice issues."
+  - "I know how to help my students communicate persuasively about social justice issues."
+  - "I know how to help my students feel confident."
+  - "I know how to help my students build their critical consciousness."
+  - "I push my school leadership to integrate social justice education into our core curriculum."
+- We focus here only on the **pre-survey** or “onboarding_df,” grouping by gender.
+
+**Code Approach**:
+- The code groups the onboarding dataframe by “Gender,” then computes the mean Likert score for each of the five questions within each gender group.
+- It plots a **grouped bar chart** with question labels on the x-axis and mean scores on the y-axis, colored by gender (Female, Male, Unknown).
+
+**Results Summary**:
+- The chart typically shows 3 bars for each question, one per gender category, each bar labeled with its average Likert score.
+- It visually compares whether, for instance, Female respondents rated themselves higher on “helping students feel confident” vs. Male or Unknown.
+- Differences may appear across certain items; others may be similar across genders.
+- Generally, it reveals if there are any notable gender-based variations in attitudes or self-reported abilities prior to the program.
+"""
 
 ###############################################
 # CREATE_GRAPH_CHAT (unchanged from your code)
